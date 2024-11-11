@@ -14,10 +14,33 @@ provider "aws" {
 }
 
 resource "aws_vpc" "my_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
 
   tags = {
     Name = "my_vpc"
+  }
+}
+
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.my_vpc.id
+  tags = {
+    Name = "igw"
+  }
+}
+
+resource "aws_route_table" "igw_route_table" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+
+  tags = {
+    Name = "igw-route-table"
   }
 }
 
@@ -41,6 +64,16 @@ resource "aws_subnet" "public_subnet_east_1b" {
   tags = {
     Name = "public_subnet_east-1b"
   }
+}
+
+resource "aws_route_table_association" "public_1a" {
+  subnet_id      = aws_subnet.public_subnet_east_1a.id
+  route_table_id = aws_route_table.igw_route_table.id
+}
+
+resource "aws_route_table_association" "public_1b" {
+  subnet_id      = aws_subnet.public_subnet_east_1b.id
+  route_table_id = aws_route_table.igw_route_table.id
 }
 
 resource "aws_subnet" "private_subnet_east_1a" {
@@ -99,7 +132,7 @@ resource "aws_security_group" "instance_security_group" {
   }
 
   tags = {
-    Name = "InstanceSecurityGroup"
+    Name = "instance_sg"
   }
 }
 
@@ -109,6 +142,7 @@ resource "aws_instance" "public_instance_1" {
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.public_subnet_east_1a.id
   vpc_security_group_ids = [aws_security_group.instance_security_group.id]
+  user_data              = file("${path.module}/userdata.sh")
   tags = {
     Name = var.instance1_name
   }
@@ -120,6 +154,7 @@ resource "aws_instance" "public_instance_2" {
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.public_subnet_east_1b.id
   vpc_security_group_ids = [aws_security_group.instance_security_group.id]
+  user_data              = file("${path.module}/userdata.sh")
   tags = {
     Name = var.instance2_name
   }
@@ -131,7 +166,7 @@ resource "aws_db_subnet_group" "subnet_group" {
   subnet_ids = [aws_subnet.private_subnet_east_1a.id, aws_subnet.private_subnet_east_1b.id]
 
   tags = {
-    Name = "My DB subnet group"
+    Name = "db_subnet_group"
   }
 }
 
@@ -157,7 +192,7 @@ resource "aws_security_group" "rds_security_group" {
   }
 
   tags = {
-    Name = "rds_SecurityGroup"
+    Name = "rds_sg"
   }
 }
 
