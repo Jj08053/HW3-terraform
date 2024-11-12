@@ -31,7 +31,7 @@ resource "aws_internet_gateway" "internet_gateway" {
   }
 }
 
-resource "aws_route_table" "igw_route_table" {
+resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.my_vpc.id
 
   route {
@@ -40,7 +40,7 @@ resource "aws_route_table" "igw_route_table" {
   }
 
   tags = {
-    Name = "igw-route-table"
+    Name = "public_route_table"
   }
 }
 
@@ -68,12 +68,12 @@ resource "aws_subnet" "public_subnet_east_1b" {
 
 resource "aws_route_table_association" "public_1a" {
   subnet_id      = aws_subnet.public_subnet_east_1a.id
-  route_table_id = aws_route_table.igw_route_table.id
+  route_table_id = aws_route_table.public_route_table.id
 }
 
 resource "aws_route_table_association" "public_1b" {
   subnet_id      = aws_subnet.public_subnet_east_1b.id
-  route_table_id = aws_route_table.igw_route_table.id
+  route_table_id = aws_route_table.public_route_table.id
 }
 
 resource "aws_subnet" "private_subnet_east_1a" {
